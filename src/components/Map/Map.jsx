@@ -200,7 +200,7 @@ const Map = () => {
               {open ? <ChevronLeftIcon /> : <ChevronRightIcon />}
             </IconButton>
           )}
-          <LoadScript googleMapsApiKey="AIzaSyDhKxAhDuO_NhAo4fFl0bz81KKEcSMeaSk">
+          <LoadScript googleMapsApiKey=".">
             <GoogleMap
               mapContainerStyle={{ height: '100%', width: '100%' }}
               zoom={13}
