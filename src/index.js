@@ -14,7 +14,29 @@ root.render(
 import React from 'react'
 import ReactDOM from 'react-dom'
 import App from './App'
-import { ChakraProvider, theme } from '@chakra-ui/react'
+import { ChakraProvider, extendTheme} from '@chakra-ui/react'
+
+const theme = extendTheme({
+  components: {
+      Drawer: {
+          variants: {
+              permanent: {
+                  overlay: {
+                    pointerEvents: 'none',
+                    background: 'transparent',
+                  },
+                  dialog: {
+                      pointerEvents: 'auto',
+                  },
+                  dialogContainer: {
+                      pointerEvents: 'none',
+                      background: 'transparent',
+                  },
+              },
+          },
+      },
+  },
+});
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(

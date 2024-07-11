@@ -5,6 +5,7 @@ import Header from './components/Header/Header';
 //import List from './components/Sidebar/Sidebar';
 //import Map from './components/Map/Map';
 import Mapper from './components/Mapper/Mapper';
+import Map1 from './components/Map/Map1';
 
 
 const App = () => {
@@ -23,8 +24,9 @@ const App = () => {
         // </>
         <>
             <CssBaseline />
-            <Header />
-            <Mapper />
+            {/* <Header /> */}
+            {/* <Mapper /> */}
+            <Map1 />
         </>
     );
 }
