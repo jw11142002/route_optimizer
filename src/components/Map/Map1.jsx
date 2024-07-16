@@ -39,8 +39,8 @@ function Map1() {
     { id: 2, address: '' }
   ])
   const [optimizedOrder, setOptimizedOrder] = useState([])
+  const [markers, setMarkers] = useState([])
 
-  // Array to store references to Autocomplete instances
   const autocompleteRefs = useRef([])
 
   const updateStop = useCallback((id, address) => {
@@ -71,8 +71,13 @@ function Map1() {
       alert('Please enter all stop addresses')
       return
     }
+    setMarkers([]);
+    
     // eslint-disable-next-line no-undef
     const directionsService = new google.maps.DirectionsService()
+    // eslint-disable-next-line no-undef
+    const geocoder = new google.maps.Geocoder();
+    
     const origin = stops[0].address
     const destination = stops[stops.length - 1].address
     const waypoints = stops.slice(1, -1).map(stop => ({
@@ -94,8 +99,25 @@ function Map1() {
       setDuration(results.routes[0].legs.reduce((total, leg) => total + leg.duration.value, 0) / 60)
       
       // Store the optimized order
-      const optimizedOrder = [0, ...results.routes[0].waypoint_order, stops.length - 1];
+      const waypointOrder = results.routes[0].waypoint_order;
+      const optimizedOrder = [
+        0, 
+        ...waypointOrder.map(index => index + 1), 
+        stops.length - 1
+      ];
       setOptimizedOrder(optimizedOrder);
+
+      // Add markers for each stop
+      optimizedOrder.forEach((index, i) => {
+        geocoder.geocode({ address: stops[index].address }, (results, status) => {
+          if (status === 'google.maps.GeocoderStatus.OK') {
+            setMarkers(prev => [...prev, {
+              position: results[0].geometry.location,
+              label: `${i + 1}`
+            }]);
+          }
+        });
+      });
     } catch (error) {
       alert('Could not calculate route: ' + error.message)
     }
@@ -106,12 +128,29 @@ function Map1() {
     setDistance('')
     setDuration('')
     setStops([{ id: 1, address: '' }, { id: 2, address: '' }])
-    setOptimizedOrder([]) // Clear the optimized order
+    setOptimizedOrder([])
+    setMarkers([]) // Clear all markers
   }, [])
 
   const toggleSidebar = useCallback(() => setIsOpen(prev => !prev), [])
 
-  const OptimizedOrderSummary = ({ optimizedOrder, stops }) => {
+  const generateGoogleMapsUrl = useCallback((optimizedOrder, stops) => {
+    if (optimizedOrder.length === 0 || stops.length === 0) return '';
+
+    const baseUrl = 'https://www.google.com/maps/dir/?api=1';
+    const origin = encodeURIComponent(stops[optimizedOrder[0]].address);
+    const destination = encodeURIComponent(stops[optimizedOrder[optimizedOrder.length - 1]].address);
+    
+    let waypoints = optimizedOrder.slice(1, -1).map(index => 
+      encodeURIComponent(stops[index].address)
+    ).join('|');
+
+    return `${baseUrl}&origin=${origin}&destination=${destination}&waypoints=${waypoints}&travelmode=driving`;
+  }, []);
+
+  const OptimizedOrderSummary = ({ optimizedOrder, stops, generateGoogleMapsUrl }) => {
+    const mapsUrl = generateGoogleMapsUrl(optimizedOrder, stops);
+
     return (
       <Box mt={4}>
         <Text fontWeight="bold">Optimized Route Order:</Text>
@@ -122,6 +161,15 @@ function Map1() {
             </Text>
           ))}
         </VStack>
+        {mapsUrl && (
+          <Button 
+            mt={4} 
+            colorScheme="blue" 
+            onClick={() => window.open(mapsUrl, '_blank')}
+          >
+            Open in Google Maps
+          </Button>
+        )}
       </Box>
     )
   }
@@ -225,7 +273,11 @@ function Map1() {
             </VStack>
           )}
           {optimizedOrder.length > 0 && (
-            <OptimizedOrderSummary optimizedOrder={optimizedOrder} stops={stops} />
+            <OptimizedOrderSummary 
+              optimizedOrder={optimizedOrder} 
+              stops={stops} 
+              generateGoogleMapsUrl={generateGoogleMapsUrl}
+            />
           )}
         </VStack>
       </Box>
@@ -257,7 +309,13 @@ function Map1() {
           }}
           onLoad={map => setMap(map)}
         >
-          <Marker position={center} />
+          {markers.map((marker, index) => (
+            <Marker
+              key={index}
+              position={marker.position}
+              label={marker.label}
+            />
+          ))}
           {directionsResponse && (
             <DirectionsRenderer directions={directionsResponse} />
           )}
